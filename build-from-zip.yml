@@ -1,11 +1,8 @@
-name: Build LocalRuleVPN from uploaded ZIP
-
-on:
-  workflow_dispatch:
-  push:
-    paths:
-      - 'LocalRuleVPN_Android12_starter.zip'
-      - '.github/workflows/build-from-zip.yml'
+- name: Extract Android project ZIP
+  run: |
+    test -f LocalRuleVPN_starter.zip
+    mkdir -p android-project
+    unzip -q LocalRuleVPN_starter.zip -d android-project
 
 permissions:
   contents: read
