@@ -1,10 +1,10 @@
-name: Build debug APK
+name: Build LocalRuleVPN from repaired source ZIP
 
 on:
   workflow_dispatch:
   push:
     paths:
-      - 'LocalRuleVPN_starter.zip'
+      - 'LocalRuleVPN_repaired_source.zip'
       - '.github/workflows/build-from-zip.yml'
 
 permissions:
@@ -13,7 +13,6 @@ permissions:
 jobs:
   build:
     runs-on: ubuntu-latest
-
     steps:
       - name: Checkout repository
         uses: actions/checkout@v4
@@ -29,37 +28,22 @@ jobs:
         with:
           gradle-version: '8.7'
 
-      - name: Check ZIP file
-        run: test -f LocalRuleVPN_starter.zip
-
-      - name: Extract Android project
+      - name: Check and extract repaired Android project ZIP
         run: |
+          test -f LocalRuleVPN_repaired_source.zip
           mkdir -p android-project
-          unzip -q LocalRuleVPN_starter.zip -d android-project
-          echo "Checking extracted files:"
-          find android-project -maxdepth 4 -type f | head -100
-
-      - name: Locate Gradle project
-        run: |
-          if [ -f android-project/settings.gradle ] || [ -f android-project/settings.gradle.kts ]; then
-            echo "PROJECT_DIR=android-project" >> "$GITHUB_ENV"
-          else
-            PROJECT_SETTINGS=$(find android-project -maxdepth 4 \( -name settings.gradle -o -name settings.gradle.kts \) -print -quit)
-            if [ -z "$PROJECT_SETTINGS" ]; then
-              echo "Cannot find settings.gradle or settings.gradle.kts"
-              exit 1
-            fi
-            echo "PROJECT_DIR=$(dirname "$PROJECT_SETTINGS")" >> "$GITHUB_ENV"
-          fi
+          unzip -q LocalRuleVPN_repaired_source.zip -d android-project
+          test -f android-project/settings.gradle
+          test -f android-project/app/build.gradle
+          test -f android-project/app/src/main/AndroidManifest.xml
 
       - name: Build debug APK
-        run: |
-          cd "$PROJECT_DIR"
-          gradle --no-daemon assembleDebug
+        working-directory: android-project
+        run: gradle --no-daemon assembleDebug
 
       - name: Upload APK artifact
         uses: actions/upload-artifact@v4
         with:
-          name: LocalRuleVPN-debug-apk
-          path: ${{ env.PROJECT_DIR }}/app/build/outputs/apk/debug/app-debug.apk
+          name: LocalRuleVPN-repaired-debug-apk
+          path: android-project/app/build/outputs/apk/debug/app-debug.apk
           if-no-files-found: error
